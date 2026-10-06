@@ -26,7 +26,7 @@ Private Function NombresEntrada() As Variant
         "inp_Proveedor", "inp_Equipo", "inp_Promotor", "inp_Producto", "inp_Obligado", "inp_Tipo", "inp_Moneda", _
         "inp_TC", "inp_Modalidad", "inp_TipoActivo", "inp_Estado", "inp_Originador", "inp_Tier", "inp_Precio", _
         "inp_Descuento", "inp_DiasRP", "inp_IVAEquipo", "inp_UsoAnticipo", "inp_Anticipo", "inp_SeguroFin", _
-        "inp_TIIE", "inp_PlazoSol", "inp_Fondeo", "inp_OtrosMonto", "inp_OtrosDesc", "inp_GPSMonto", _
+        "inp_TIIE", "inp_PlazoSol", "inp_Fuente", "inp_FondeoManual", "inp_OtrosMonto", "inp_OtrosDesc", "inp_GPSMonto", _
         "inp_GastosInv", "inp_ComBanco", "inp_CMobj", "inp_ComProm", "inp_SeguroMonto", "inp_Aseguradora", _
         "inp_AseguradoraPor", "esc_Plazo", "esc_Margen", "esc_Residual", "esc_Comision", "esc_DepPct", _
         "esc_Deposito", "esc_Incluir")
@@ -168,7 +168,8 @@ Public Sub LimpiarCaptura(Optional ByVal sinDialogo As Boolean = True)
     R("inp_AseguradoraPor").Value = "Cliente"
     R("inp_TIIE").Value = Valor("par_TIIE")
     R("inp_PlazoSol").Value = R("esc_Plazo").Cells(2).Value
-    R("inp_Fondeo").Value = Valor("par_Fondeo")
+    R("inp_Fuente").Value = Valor("par_FuenteDef")
+    R("inp_FondeoManual").ClearContents
     R("inp_OtrosMonto").Value = 0
     R("inp_OtrosDesc").Value = ""
     R("inp_GPSMonto").Value = 0

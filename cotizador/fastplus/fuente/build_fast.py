@@ -259,7 +259,7 @@ cfg = [
     ('Ciudad para la fecha de los documentos', 'Ciudad de México', 'par_Ciudad', None),
     ('Sitio web / teléfono general', '', 'par_Contacto', None),
     ('Tasa de IVA rentas', 0.16, 'par_IVA', PCT),
-    ('Tasa de fondeo anual (valor por defecto)', 0.205, 'par_Fondeo', PCT),
+    ('Fuente de fondeo por defecto (catálogo a la derecha)', 'Recursos propios SOFOPLUS', 'par_FuenteDef', None),
     ('TIIE 28 días (valor por defecto)', 0.086, 'par_TIIE', PCT4),
     ('Vigencia de la propuesta (días naturales)', 15, 'par_Vigencia', '0'),
     ('Base de días para costo de fondeo diario', 360, 'par_BaseDias', '0'),
@@ -287,7 +287,8 @@ for label, val, nm, fmt in cfg:
     if nm == 'par_BaseIVAFin':
         dv_list(ws, '=lst_BaseIVA', 'C%d' % r)
     r += 1
-ws['C12'].comment = Comment('Dato del archivo original de SOFOPLUS (20.5%). Actualice con su costo de fondeo.', 'Cotizador')
+ws['C12'].comment = Comment('Fuente que se propone en cada nueva cotización. Las tasas se capturan en el catálogo de fuentes de fondeo.', 'Cotizador')
+dv_list(ws, '=lst_Fuentes', 'C12')
 ws['C13'].comment = Comment('Actualice con la TIIE 28 días publicada por Banxico.', 'Cotizador')
 ws['C22'].comment = Comment('Ley del ISR art. 28 fr. XIII: renta de automóviles deducible hasta $200 diarios ($285 eléctricos/híbridos). Verifique con su área fiscal.', 'Cotizador')
 
@@ -314,6 +315,7 @@ for lab, f, nm in fijos:
 
 # ---- listas
 header_bar(ws, 3, 8, 22, 'LISTAS DESPLEGABLES')
+ws.cell(row=3, column=22).fill = fill_hdr
 listas = [
     ('H', 'Tipo de arrendamiento', ['Arrendamiento Puro', 'Arrendamiento Financiero'], 'lst_Tipo'),
     ('I', 'Moneda', ['Moneda Nacional', 'Dólares Americanos'], 'lst_Moneda'),
@@ -330,6 +332,7 @@ listas = [
     ('S', 'Originador', ['Promotor FASTPLUS', 'Referenciador', 'Agencia / distribuidor', 'Empleado SOFOPLUS'], 'lst_Originador'),
     ('T', 'Aseguradora por parte de', ['Cliente', 'FASTPLUS'], 'lst_AsegPor'),
     ('U', 'Plazos', [12, 24, 36, 48], 'lst_Plazos'),
+    ('V', 'Tipo tasa fondeo', ['Tasa fija', 'TIIE + spread'], 'lst_TipoFondeo'),
 ]
 for col, title, vals, nm in listas:
     c = ws['%s4' % col]
@@ -362,6 +365,37 @@ for i, row in enumerate(oficinas):
 name('ofi_Tabla', absref(ws.title, 'H%d:L%d' % (OF0 + 2, OF0 + 1 + len(oficinas))))
 name('ofi_Region', absref(ws.title, 'H%d:H%d' % (OF0 + 2, OF0 + 1 + len(oficinas))))
 ws.cell(row=OF0 + 2 + len(oficinas), column=8, value='Si una región no tiene domicilio se usa el corporativo.').font = f_note
+
+# ---- fuentes de fondeo
+FO0 = OF0
+header_bar(ws, FO0, 14, 19, 'FUENTES DE FONDEO (dónde se fondea la operación)')
+for j, h in enumerate(['Fuente de fondeo', 'Tipo de tasa', 'Tasa fija anual', 'Spread sobre TIIE', 'Tasa de fondeo resultante', 'Notas']):
+    c = ws.cell(row=FO0 + 1, column=14 + j, value=h)
+    c.font = f_bold
+    c.fill = fill_sub
+    c.alignment = Alignment(wrap_text=True, horizontal='center')
+ws.row_dimensions[FO0 + 1].height = 30
+fuentes = [('Recursos propios SOFOPLUS', 'Tasa fija', 0.205, None, 'Costo del archivo original (20.5%)'),
+           ('Línea bancaria 1', 'TIIE + spread', None, 0.040, 'Ejemplo: capture banco y spread reales'),
+           ('Línea bancaria 2', 'TIIE + spread', None, 0.050, 'Ejemplo: capture banco y spread reales'),
+           ('Banca de desarrollo / fondo', 'TIIE + spread', None, 0.030, 'Ejemplo: capture condiciones reales'),
+           (None, None, None, None, None), (None, None, None, None, None)]
+for i, (fu, ti, fi, sp, no) in enumerate(fuentes):
+    rr = FO0 + 2 + i
+    inp(ws.cell(row=rr, column=14), fu)
+    inp(ws.cell(row=rr, column=15), ti)
+    inp(ws.cell(row=rr, column=16), fi, PCT)
+    inp(ws.cell(row=rr, column=17), sp, PCT)
+    calc(ws.cell(row=rr, column=18), '=IF(N{r}="","",IF(O{r}="TIIE + spread",inp_TIIE+Q{r},P{r}))'.format(r=rr), PCT, bold=True)
+    inp(ws.cell(row=rr, column=19), no)
+dv_list(ws, '=lst_TipoFondeo', 'O%d:O%d' % (FO0 + 2, FO0 + 1 + len(fuentes)))
+name('lst_Fuentes', absref(ws.title, 'N%d:N%d' % (FO0 + 2, FO0 + 1 + len(fuentes))))
+name('fon_Tasa', absref(ws.title, 'R%d:R%d' % (FO0 + 2, FO0 + 1 + len(fuentes))))
+ws.cell(row=FO0 + 2 + len(fuentes), column=14, value='TIIE + spread usa la TIIE capturada en el Cotizador. El ejecutivo elige la fuente en el Cotizador.').font = f_note
+for col in 'NOPQRS':
+    ws.column_dimensions[col].width = 18
+ws.column_dimensions['N'].width = 28
+ws.column_dimensions['S'].width = 34
 
 # ---- promotores
 PR0 = OF0 + 10
@@ -502,9 +536,14 @@ caja(ws, 'C27:D27', None, None, MON, salida=True)
 etiqueta(ws, 'E27', 'Modalidad de rentas:')
 ws.merge_cells('E27:G27')
 caja(ws, 'H27', 'Vencido', 'inp_Modalidad', lst='=lst_Modalidad')
-etiqueta(ws, 'J27', 'Fondeo (interno):')
-ws.merge_cells('J27:K27')
-caja(ws, 'L27', 0.205, 'inp_Fondeo', PCT)
+etiqueta(ws, 'I27', 'Fuente de fondeo:')
+ws.merge_cells('I27:J27')
+caja(ws, 'K27:M27', 'Recursos propios SOFOPLUS', 'inp_Fuente', lst='=lst_Fuentes',
+     note='¿Con qué fuente se fondea esta operación? Las fuentes y sus tasas se administran en Catálogos.')
+for _c in ('K27', 'L27', 'M27'):
+    ws[_c].fill = PatternFill('solid', fgColor='FFE699')
+caja(ws, 'N27', '=IF(inp_FondeoManual<>"",inp_FondeoManual,IFERROR(INDEX(fon_Tasa,MATCH(inp_Fuente,lst_Fuentes,0)),0))', 'inp_Fondeo', PCT, salida=True,
+     note='Tasa de fondeo anual que se usa para el margen de caja.')
 etiqueta(ws, 'B29', 'Otros gastos (financiados):')
 caja(ws, 'C29:D29', 0, 'inp_OtrosMonto', MON, note='IVA incluido. Mantenimiento preventivo, garantía extendida u otros; se financian en la renta.')
 etiqueta(ws, 'E29', 'Descripción otros gastos:')
@@ -537,6 +576,10 @@ etiqueta(ws, 'E37', 'Moneda:')
 caja(ws, 'F37:G37', 'Moneda Nacional', 'inp_Moneda', lst='=lst_Moneda')
 etiqueta(ws, 'H37', 'Tipo de cambio:')
 caja(ws, 'I37', 1, 'inp_TC', '#,##0.0000')
+etiqueta(ws, 'J37', 'Tasa de fondeo manual:')
+ws.merge_cells('J37:L37')
+caja(ws, 'M37', None, 'inp_FondeoManual', PCT, note='Opcional. Vacío = tasa de la fuente de fondeo elegida.')
+etiqueta(ws, 'N37', '(opcional)', 'left')
 
 barra(ws, 39, 2, 14, 'Condiciones de la operación: resultados del cálculo por plazo')
 RES0 = 41
@@ -944,6 +987,10 @@ for i, (lab, f, fmt) in enumerate([('Cliente:', '=inp_Cliente', None), ('Equipo:
     ws.merge_cells(start_row=4 + i, start_column=3, end_row=4 + i, end_column=6)
     for col in range(2, 7):
         ws.cell(row=4 + i, column=col).border = box
+ws.cell(row=7, column=2, value='Fuente de fondeo:').font = f_bold
+_c = ws.cell(row=7, column=3, value='=inp_Fuente&"  ·  tasa de fondeo "&TEXT(inp_Fondeo,"0.00%%")&"  ·  spread "&TEXT(%s,"0.00%%")' % CH('$I$23'))
+_c.font = Font(name=FONT, size=10, bold=True, color=MORADO)
+ws.merge_cells('C7:J7')
 for i, (lab, f, fmt) in enumerate([('Plazo:', '=inp_PlazoSol&" meses"', None), ('Anticipo:', '=inp_Anticipo', MON),
                                     ('Depósito en garantía:', '=%s' % CH('$C$30'), MON)]):
     ws.cell(row=4 + i, column=8, value=lab).font = f_bold
@@ -1524,7 +1571,8 @@ for i, (lab, f, fmt) in enumerate(izq):
         c.number_format = '0.00%'
         c.alignment = center
         c.border = box
-der = [('TIR real', '=%s' % CH('$I$8'), PCT), ('TIR mínima (rate card)', '=%s' % CH('$C$46'), PCT),
+der = [('Fuente de fondeo', '=inp_Fuente&" ("&TEXT(inp_Fondeo,"0.00%")&")"', None),
+       ('TIR real', '=%s' % CH('$I$8'), PCT), ('TIR mínima (rate card)', '=%s' % CH('$C$46'), PCT),
        ('Margen de caja neto', '=%s' % CH('$I$26'), PCT), ('Margen rate card', '=%s' % CH('$C$45'), PCT),
        ('Margen de caja neto ($)', '=%s' % CH('$I$25'), MON), ('Tasa de la operación', '=%s' % CH('$C$8'), PCT),
        ('TIIE + margen', '=TEXT(inp_TIIE,"0.00%%")&" + "&TEXT(%s-inp_TIIE,"0.00%%")' % CH('$C$8'), None),
@@ -1595,6 +1643,12 @@ name('hist_Header', absref(ws.title, 'A4'))
 
 
 # ==================================================================== IMPRESIÓN / PROTECCIÓN
+ws_cfg.page_setup.orientation = 'landscape'
+ws_cfg.page_setup.paperSize = ws_cfg.PAPERSIZE_LETTER
+ws_cfg.page_setup.fitToWidth = 1
+ws_cfg.page_setup.fitToHeight = 0
+ws_cfg.sheet_properties.pageSetUpPr.fitToPage = True
+ws_cfg.print_area = 'A1:S84'
 ws_his.page_setup.orientation = 'landscape'
 ws_his.page_setup.fitToWidth = 1
 ws_his.page_setup.fitToHeight = 0

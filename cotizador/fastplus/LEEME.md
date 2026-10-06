@@ -23,6 +23,24 @@ verificado.
 | Catalogos | Empresa, IVA, TIIE, fondeo, banco, oficinas por región y catálogo de promotores. |
 | Corrida 1–4 (ocultas) | Corrida completa de cada plazo. Se ven con el botón *Ir a → Corrida*. |
 
+## Fondeo de la operación (versión 3)
+
+* **Dónde se elige (el ejecutivo de cuenta):** en el **Cotizador**, renglón "Datos para el
+  cálculo", celda dorada **Fuente de fondeo**. Junto a ella aparece la tasa de fondeo que resulta.
+  Si se necesita otra tasa en una operación especial, se captura en **Tasa de fondeo manual**
+  (sección de seguro); vacía usa la tasa del catálogo.
+* **Dónde se administra (dónde se fondea la empresa):** en **Catálogos** (clave de
+  administrador), tabla **FUENTES DE FONDEO**. Cada fuente tiene un tipo de tasa:
+  * **Tasa fija.** Ejemplo: recursos propios al 20.5%.
+  * **TIIE + spread.** Ejemplo: línea bancaria con TIIE + 4.0%. Se recalcula sola cuando cambia
+    la TIIE.
+
+  Hay 6 renglones disponibles. Las líneas bancarias que vienen son ejemplos: capture sus bancos y
+  spreads reales.
+* **Efecto:** la tasa de fondeo descuenta los flujos para el margen de caja, el spread, la tasa
+  mínima y el dictamen del rate card. La fuente queda en la hoja Riesgo y en Factores, y se
+  guarda en el Historial con cada folio.
+
 ## Botones y seguridad (versión 2, al estilo ABC)
 
 **Botones dentro de cada hoja.** No se imprimen y se distinguen por color:

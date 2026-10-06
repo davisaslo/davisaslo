@@ -72,3 +72,8 @@ ok2,wv2=run(dict(inp={'inp_Anticipo':87980,'inp_TIIE':0.087,'inp_DiasRP':12,'inp
    'inp_Modalidad':'Anticipado','inp_CMobj':0.10},
    esc={('esc_DepPct',k):0.05 for k in range(1,5)}, p=alt))
 print('TODO OK' if ok1 and ok2 else 'HAY DIFERENCIAS')
+print('Caso 3: fuente "Línea bancaria 1" (TIIE 8.6% + 4.0% = 12.6%)')
+ok3,_=run(dict(inp={'inp_Fuente':'Línea bancaria 1'}, p=dict(base, fondeo=0.126)))
+print('Caso 4: tasa de fondeo manual 15%')
+ok4,_=run(dict(inp={'inp_FondeoManual':0.15}, p=dict(base, fondeo=0.15)))
+print('FONDEO OK' if ok3 and ok4 else 'FONDEO CON DIFERENCIAS')
