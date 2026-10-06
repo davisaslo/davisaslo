@@ -52,6 +52,7 @@ def run(case):
             mid=(lo+hi)/2
             if cmn_at(mid)<p['obj'][k-1]: lo=mid
             else: hi=mid
+        mid=max(mid,0.26)
         pi=(eng+com+rp+gi+segc)*1.16+dep
         chk=[('R',C(24),R),('M',C(19),M),('dep',C(30),dep),('com',C(28),com),('CMn',I(25),cmn),('TIR',I(8),tir),
              ('TasaMin',I(15),mid),('PI',I(20),pi),('Req+Rgps+Rseg+Rotr',C(48)+C(53)+C(49)+C(50),R),('obj',C(45),p['obj'][k-1]),('Saldo',I(16),0)]
@@ -59,8 +60,8 @@ def run(case):
         ok&=not bad
         print('  Plazo %d: renta %.2f  margen neto %.2f  TIR %.3f%%  tasa mín %.3f%%  pago ini %.2f -> %s'%(n,R,cmn,tir*100,mid*100,pi,'OK' if not bad else bad))
     return ok,wv
-base=dict(precio=879802,antic=75845,tiie=0.086,marg=[0.16,0.155,0.15,0.145],res=[0.3,0.2,0.15,0.1],plazos=[12,24,36,48],
-          tau=0,fecha=dt.datetime(2026,10,6),dias=0,fondeo=0.205,com=[0.02]*4,depp=[0]*4,gi=0,seg=0,segfin=False,gps=0,otros=0,
+base=dict(precio=879802,antic=75845,tiie=0.086,marg=[0.214,0.204,0.194,0.184],res=[0.3,0.2,0.15,0.1],plazos=[12,24,36,48],
+          tau=0,fecha=dt.datetime(2026,10,6),dias=0,fondeo=0.21,com=[0.02]*4,depp=[0]*4,gi=0,seg=0,segfin=False,gps=0,otros=0,
           desc=0,cp=0,obj=[0.04,0.05,0.06,0.07])
 print('Caso 1: datos por defecto')
 ok1,wv=run(dict(inp={},p=base))
@@ -72,8 +73,8 @@ ok2,wv2=run(dict(inp={'inp_Anticipo':87980,'inp_TIIE':0.087,'inp_DiasRP':12,'inp
    'inp_Modalidad':'Anticipado','inp_CMobj':0.10},
    esc={('esc_DepPct',k):0.05 for k in range(1,5)}, p=alt))
 print('TODO OK' if ok1 and ok2 else 'HAY DIFERENCIAS')
-print('Caso 3: fuente "Línea bancaria 1" (TIIE 8.6% + 4.0% = 12.6%)')
-ok3,_=run(dict(inp={'inp_Fuente':'Línea bancaria 1'}, p=dict(base, fondeo=0.126)))
+print('Caso 3: tasa de fondeo manual 12.6%')
+ok3,_=run(dict(inp={'inp_FondeoManual':0.126}, p=dict(base, fondeo=0.126)))
 print('Caso 4: tasa de fondeo manual 15%')
 ok4,_=run(dict(inp={'inp_FondeoManual':0.15}, p=dict(base, fondeo=0.15)))
 print('FONDEO OK' if ok3 and ok4 else 'FONDEO CON DIFERENCIAS')

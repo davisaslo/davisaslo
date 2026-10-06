@@ -23,6 +23,21 @@ verificado.
 | Catalogos | Empresa, IVA, TIIE, fondeo, banco, oficinas por región y catálogo de promotores. |
 | Corrida 1–4 (ocultas) | Corrida completa de cada plazo. Se ven con el botón *Ir a → Corrida*. |
 
+## Política de tasas y fondeo (versión 4)
+
+* **Fondeo SOFOPLUS / FASTPLUS: 21.0%** (tasa fija). Es la fuente por defecto en el catálogo.
+* **Tasa a clientes: del 26% al 33% anual** (parámetros *Tasa mínima / máxima a clientes* en
+  Catálogos).
+  * Una tasa fuera de rango se marca en rojo en Factores, el dictamen dice **FUERA DE RANGO** y
+    aparece una alerta.
+  * La "tasa mínima para cumplir" nunca baja del 26%.
+  * El botón *Margen mínimo* no aplica tasas mayores al 33%: avisa que hay que revisar anticipo,
+    residual o plazo.
+* **Factores por plazo:** TIIE 8.6% + margen = 30% / 29% / 28% / 27% para 12 / 24 / 36 / 48
+  meses. Todos cumplen el rate card con fondeo al 21%.
+* **Fuente que ya no está en el catálogo** (por ejemplo, al cargar un folio viejo): se usa la
+  fuente principal y aparece una alerta. Así el margen nunca se calcula con fondeo en 0%.
+
 ## Fondeo de la operación (versión 3)
 
 * **Dónde se elige (el ejecutivo de cuenta):** en el **Cotizador**, renglón "Datos para el

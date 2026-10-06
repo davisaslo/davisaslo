@@ -259,7 +259,7 @@ cfg = [
     ('Ciudad para la fecha de los documentos', 'Ciudad de México', 'par_Ciudad', None),
     ('Sitio web / teléfono general', '', 'par_Contacto', None),
     ('Tasa de IVA rentas', 0.16, 'par_IVA', PCT),
-    ('Fuente de fondeo por defecto (catálogo a la derecha)', 'Recursos propios SOFOPLUS', 'par_FuenteDef', None),
+    ('Fuente de fondeo por defecto (catálogo a la derecha)', 'SOFOPLUS / FASTPLUS', 'par_FuenteDef', None),
     ('TIIE 28 días (valor por defecto)', 0.086, 'par_TIIE', PCT4),
     ('Vigencia de la propuesta (días naturales)', 15, 'par_Vigencia', '0'),
     ('Base de días para costo de fondeo diario', 360, 'par_BaseDias', '0'),
@@ -277,6 +277,8 @@ cfg = [
     ('Depósito en sucursal: cuenta', '', 'par_Cuenta', None),
     ('Depósito en sucursal: convenio', '', 'par_Convenio', None),
     ('Beneficiario', 'SOFOPLUS, S.A.P.I. DE C.V., E.R.', 'par_Beneficiario', None),
+    ('Tasa mínima a clientes (política)', 0.26, 'par_TasaMin', PCT),
+    ('Tasa máxima a clientes (política)', 0.33, 'par_TasaMax', PCT),
 ]
 r = 4
 for label, val, nm, fmt in cfg:
@@ -375,11 +377,8 @@ for j, h in enumerate(['Fuente de fondeo', 'Tipo de tasa', 'Tasa fija anual', 'S
     c.fill = fill_sub
     c.alignment = Alignment(wrap_text=True, horizontal='center')
 ws.row_dimensions[FO0 + 1].height = 30
-fuentes = [('Recursos propios SOFOPLUS', 'Tasa fija', 0.205, None, 'Costo del archivo original (20.5%)'),
-           ('Línea bancaria 1', 'TIIE + spread', None, 0.040, 'Ejemplo: capture banco y spread reales'),
-           ('Línea bancaria 2', 'TIIE + spread', None, 0.050, 'Ejemplo: capture banco y spread reales'),
-           ('Banca de desarrollo / fondo', 'TIIE + spread', None, 0.030, 'Ejemplo: capture condiciones reales'),
-           (None, None, None, None, None), (None, None, None, None, None)]
+fuentes = [('SOFOPLUS / FASTPLUS', 'Tasa fija', 0.21, None, 'Costo de fondeo vigente: 21.0% (dato de la empresa)')] + \
+          [(None, None, None, None, None)] * 5
 for i, (fu, ti, fi, sp, no) in enumerate(fuentes):
     rr = FO0 + 2 + i
     inp(ws.cell(row=rr, column=14), fu)
@@ -538,11 +537,11 @@ ws.merge_cells('E27:G27')
 caja(ws, 'H27', 'Vencido', 'inp_Modalidad', lst='=lst_Modalidad')
 etiqueta(ws, 'I27', 'Fuente de fondeo:')
 ws.merge_cells('I27:J27')
-caja(ws, 'K27:M27', 'Recursos propios SOFOPLUS', 'inp_Fuente', lst='=lst_Fuentes',
+caja(ws, 'K27:M27', 'SOFOPLUS / FASTPLUS', 'inp_Fuente', lst='=lst_Fuentes',
      note='¿Con qué fuente se fondea esta operación? Las fuentes y sus tasas se administran en Catálogos.')
 for _c in ('K27', 'L27', 'M27'):
     ws[_c].fill = PatternFill('solid', fgColor='FFE699')
-caja(ws, 'N27', '=IF(inp_FondeoManual<>"",inp_FondeoManual,IFERROR(INDEX(fon_Tasa,MATCH(inp_Fuente,lst_Fuentes,0)),0))', 'inp_Fondeo', PCT, salida=True,
+caja(ws, 'N27', '=IF(inp_FondeoManual<>"",inp_FondeoManual,IFERROR(INDEX(fon_Tasa,MATCH(inp_Fuente,lst_Fuentes,0)),INDEX(fon_Tasa,1)))', 'inp_Fondeo', PCT, salida=True,
      note='Tasa de fondeo anual que se usa para el margen de caja.')
 etiqueta(ws, 'B29', 'Otros gastos (financiados):')
 caja(ws, 'C29:D29', 0, 'inp_OtrosMonto', MON, note='IVA incluido. Mantenimiento preventivo, garantía extendida u otros; se financian en la renta.')
@@ -608,8 +607,8 @@ for j, h in enumerate(hdr):
     c.alignment = center
     c.border = box
 ws.row_dimensions[FAC0].height = 42
-fac_vals = [(12, 0.160, 0.30, 0.02, 0.0, 0), (24, 0.155, 0.20, 0.02, 0.0, 0),
-            (36, 0.150, 0.15, 0.02, 0.0, 0), (48, 0.145, 0.10, 0.02, 0.0, 0)]
+fac_vals = [(12, 0.214, 0.30, 0.02, 0.0, 0), (24, 0.204, 0.20, 0.02, 0.0, 0),
+            (36, 0.194, 0.15, 0.02, 0.0, 0), (48, 0.184, 0.10, 0.02, 0.0, 0)]   # TIIE 8.6% + margen = 30% / 29% / 28% / 27%
 for i, (pl, mg, res, com, depp, depn) in enumerate(fac_vals):
     rr = FAC0 + 1 + i
     vals = [(pl, '0', True), (mg, PCT, True), ('=inp_TIIE+C%d' % rr, PCT, False), (res, PCT, True),
@@ -631,6 +630,9 @@ R1, R4 = FAC0 + 1, FAC0 + 4
 for col, nm in zip('BCEGHIJ', ['esc_Plazo', 'esc_Margen', 'esc_Residual', 'esc_Comision', 'esc_DepPct', 'esc_Deposito', 'esc_Incluir']):
     name(nm, absref(ws.title, '%s%d:%s%d' % (col, R1, col, R4)))
 dv_list(ws, '=lst_SiNo', 'J%d:J%d' % (R1, R4))
+ws.conditional_formatting.add('D%d:D%d' % (R1, R4), FormulaRule(formula=['OR(D%d<par_TasaMin-0.000001,D%d>par_TasaMax+0.000001)' % (R1, R1)],
+                              fill=PatternFill('solid', fgColor='FF0000')))
+ws.cell(row=R4 + 1, column=2, value='="Política de tasa a clientes: del "&TEXT(par_TasaMin,"0%")&" al "&TEXT(par_TasaMax,"0%")&" anual. Fondeo: "&inp_Fuente&" al "&TEXT(inp_Fondeo,"0.0%")&"."').font = Font(name=FONT, size=9, bold=True, color='C00000')
 dv_num(ws, 'B%d:B%d' % (R1, R4), 1, 84, 'whole')
 dv_num(ws, 'E%d:E%d' % (R1, R4), 0, 0.9)
 # columnas internas (ocultas) que alimentan el motor
@@ -670,11 +672,11 @@ for j, pl in enumerate([12, 24, 36, 48]):
     c.fill = fill_sub
     c.alignment = center
     c.number_format = '"CM mín. "0" m"'
-tiers = [('1', 'Más de $500 millones', 0.20, [0.020, 0.030, 0.040, 0.050]),
-         ('2', '$300 a $500 millones', 0.21, [0.025, 0.035, 0.045, 0.055]),
-         ('3', '$100 a $300 millones', 0.22, [0.030, 0.040, 0.050, 0.060]),
-         ('4', '$50 a $100 millones', 0.23, [0.035, 0.045, 0.055, 0.065]),
-         ('5', 'Menos de $50 millones', 0.24, [0.040, 0.050, 0.060, 0.070])]
+tiers = [('1', 'Más de $500 millones', 0.26, [0.020, 0.030, 0.040, 0.050]),
+         ('2', '$300 a $500 millones', 0.26, [0.025, 0.035, 0.045, 0.055]),
+         ('3', '$100 a $300 millones', 0.26, [0.030, 0.040, 0.050, 0.060]),
+         ('4', '$50 a $100 millones', 0.26, [0.035, 0.045, 0.055, 0.065]),
+         ('5', 'Menos de $50 millones', 0.26, [0.040, 0.050, 0.060, 0.070])]
 for i, (t, v, tir, cms) in enumerate(tiers):
     rr = RC0 + 1 + i
     ws.cell(row=rr, column=2, value=t).alignment = center
@@ -796,7 +798,7 @@ def build_corrida(ws, k):
         ('Factor de descuento del último pago', '=IFERROR(INDEX(M%d:M%d,C38),0)' % (FIRST, LAST), '0.000000', 'ML'),
         ('Sensibilidad del CM a la renta (∂CM/∂R)', '=I11+C29*(1+C14)*(1-I12)+C34/30', '0.000000', 'B'),
         ('Renta mínima para el CM objetivo (neto de comisión)', '=IFERROR((C45*C19+C44-(I4-C24*I13))/I13,0)', MON, 'Rmin'),
-        ('Tasa anual mínima para el CM objetivo', '=IFERROR(RATE(C5,I14,-C19,C21,C7)*12,"n/d")', PCT, 'TasaMin'),
+        ('Tasa anual mínima (CM objetivo y política de tasa mínima)', '=IFERROR(MAX(RATE(C5,I14,-C19,C21,C7)*12,par_TasaMin),"n/d")', PCT, 'TasaMin'),
         ('Saldo final de la tabla (debe ser 0)', '=IFERROR(INDEX(I%d:I%d,C38),0)' % (FIRST, LAST), MON, 'Saldo'),
         ('Pago inicial: base sin IVA (anticipo+comisión+renta prop.+contado+gastos)', '=C16+C28+C35+C43+I29', MON, 'PIb'),
         ('Pago inicial: IVA', '=I17*C14', MON, 'PIi'),
@@ -808,7 +810,7 @@ def build_corrida(ws, k):
         ('Tasa anual aplicada', '=C8', PCT, 'Tasa'),
         ('Cash margin neto de comisión del promotor ($)', '=I4-C44', MON, 'CMn'),
         ('Cash margin neto (% del monto financiado)', '=IFERROR(I25/C19,0)', PCT, 'CMnp'),
-        ('Dictamen vs. rate card', '=IF(AND(I26>=C45,N(I8)>=C46),"CUMPLE",IF(I26>=C45,"CM OK / TIR BAJA","NO CUMPLE"))', None, 'Dict'),
+        ('Dictamen vs. rate card', '=IF(OR(C8<par_TasaMin-0.000001,C8>par_TasaMax+0.000001),"FUERA DE RANGO",IF(AND(I26>=C45,N(I8)>=C46),"CUMPLE",IF(I26>=C45,"CM OK / TIR BAJA","NO CUMPLE")))', None, 'Dict'),
         ('Margen mínimo sobre TIIE (si la tasa mínima aplica)', '=IFERROR(I15-inp_TIIE,"n/d")', PCT, 'MargMin'),
         ('Seguro, GPS y otros de contado (sin IVA)', '=IF(INDEX(esc_SeguroForma,$C$3)="Contado",INDEX(esc_Seguro,$C$3),0)+IF(INDEX(esc_GPSForma,$C$3)="Contado",INDEX(esc_GPS,$C$3),0)+IF(INDEX(esc_OtrosForma,$C$3)="Contado",INDEX(esc_Otros,$C$3),0)', MON, 'Cont'),
     ]
@@ -1134,12 +1136,16 @@ for k in range(1, 5):
     E = lambda nm: 'INDEX(%s,%d)' % (nm, k)
     f = ('IF(inp_Valor<=0,"Capture el precio del equipo. ","")'
          '&IF({tasa}<inp_Fondeo,"Spread negativo (tasa < fondeo). ","")'
+         '&IF(AND(inp_FondeoManual="",ISNA(MATCH(inp_Fuente,lst_Fuentes,0))),"La fuente de fondeo no está en el catálogo; se usa la principal. ","")'
+         '&IF({tasa}<par_TasaMin-0.000001,"Tasa menor a la mínima de política ("&TEXT(par_TasaMin,"0%")&"). ","")'
+         '&IF({tasa}>par_TasaMax+0.000001,"Tasa mayor a la máxima de política ("&TEXT(par_TasaMax,"0%")&"). ","")'
+         '&IF(N({tmin})>par_TasaMax,"Para cumplir el rate card se requiere más del "&TEXT(par_TasaMax,"0%")&": revise anticipo, residual o plazo. ","")'
          '&IF({cmp}<{obj},"Margen neto por debajo del mínimo. ","")'
          '&IF(N({tir})<{tirmin},"TIR por debajo de la mínima. ","")'
          '&IF({res}>{resmax},"Residual mayor al máximo. ","")'
          '&IF(inp_Anticipo>=inp_Valor,"Anticipo mayor o igual al valor. ","")'
          '&IF(ABS({saldo})>=0.01,"La corrida no cuadra. ","")').format(
-        tasa=cr('ia', k), cmp=cr('CMnp', k), obj=cr('obj', k), tir=cr('TIR', k), tirmin=cr('tirmin', k),
+        tasa=cr('ia', k), tmin=cr('TasaMin', k), cmp=cr('CMnp', k), obj=cr('obj', k), tir=cr('TIR', k), tirmin=cr('tirmin', k),
         res=E('esc_Residual'), resmax=cr('resmax', k), saldo=cr('Saldo', k))
     c = ws.cell(row=rr, column=2 + k, value='=IF(%s="","Sin alertas",%s)' % (f, f))
     c.font = Font(name=FONT, size=8, color='C00000')

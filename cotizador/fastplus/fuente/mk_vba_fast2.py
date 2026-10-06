@@ -302,6 +302,25 @@ End Sub
 '''
 s = s.replace('ThisWorkbook.Worksheets(CStr(h)).Unprotect\n', 'ThisWorkbook.Worksheets(CStr(h)).Unprotect CLAVE_ADMIN\n')
 rep('    LimpiarNombre = Replace(s, " ", "_")', '    s = Replace(Replace(s, ".", ""), ",", "")\n    LimpiarNombre = Replace(s, " ", "_")')
+rep("""    If IsNumeric(t) Then
+        t = Application.WorksheetFunction.RoundUp(CDbl(t), 4)
+        EscribirTasa k, CDbl(t)
+        Application.Calculate
+    End If
+    AplicarTasaMinimaEscenario = t""", """    If IsNumeric(t) Then
+        t = Application.WorksheetFunction.RoundUp(CDbl(t), 4)
+        If CDbl(t) > CDbl(Valor("par_TasaMax")) + 0.000001 Then
+            AplicarTasaMinimaEscenario = "excede " & Format(Valor("par_TasaMax"), "0%")
+            Exit Function
+        End If
+        EscribirTasa k, CDbl(t)
+        Application.Calculate
+    End If
+    AplicarTasaMinimaEscenario = t""")
+rep('resumen = resumen & R("esc_Plazo").Cells(k).Value & " meses: no se pudo calcular" & vbCrLf',
+    'resumen = resumen & R("esc_Plazo").Cells(k).Value & " meses: NO APLICADO (" & t & "; para cumplir se requiere más de la tasa máxima de política)" & vbCrLf')
+rep('MsgBox "Margen sobre TIIE aplicado en la hoja Factores (cumple el rate card):" & _',
+    'MsgBox "Margen sobre TIIE aplicado en Factores (cumple el rate card; tasa entre " & Format(Valor("par_TasaMin"), "0%") & " y " & Format(Valor("par_TasaMax"), "0%") & "):" & _')
 open('vba_fast/modCotizador.bas', 'w', encoding='utf-8').write(s)
 
 # ThisWorkbook: ocultar restringidas al abrir

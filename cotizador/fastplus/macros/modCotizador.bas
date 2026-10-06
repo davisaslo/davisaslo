@@ -554,13 +554,13 @@ Public Sub AplicarTasaMinima()
             If IsNumeric(t) Then
                 resumen = resumen & R("esc_Plazo").Cells(k).Value & " meses: tasa " & Format(t, "0.00%") & " (margen sobre TIIE " & Format(t - Valor("inp_TIIE"), "0.00%") & ")" & vbCrLf
             Else
-                resumen = resumen & R("esc_Plazo").Cells(k).Value & " meses: no se pudo calcular" & vbCrLf
+                resumen = resumen & R("esc_Plazo").Cells(k).Value & " meses: NO APLICADO (" & t & "; para cumplir se requiere más de la tasa máxima de política)" & vbCrLf
             End If
         End If
     Next k
     Application.Calculate
     If resumen = "" Then resumen = "No se modificó ningún escenario."
-    MsgBox "Margen sobre TIIE aplicado en la hoja Factores (cumple el rate card):" & _
+    MsgBox "Margen sobre TIIE aplicado en Factores (cumple el rate card; tasa entre " & Format(Valor("par_TasaMin"), "0%") & " y " & Format(Valor("par_TasaMax"), "0%") & "):" & _
            vbCrLf & vbCrLf & resumen, vbInformation, "Tasa mínima"
 End Sub
 
@@ -580,6 +580,10 @@ Public Function AplicarTasaMinimaEscenario(ByVal k As Long) As Variant
     t = R("res_TasaMin").Cells(k).Value
     If IsNumeric(t) Then
         t = Application.WorksheetFunction.RoundUp(CDbl(t), 4)
+        If CDbl(t) > CDbl(Valor("par_TasaMax")) + 0.000001 Then
+            AplicarTasaMinimaEscenario = "excede " & Format(Valor("par_TasaMax"), "0%")
+            Exit Function
+        End If
         EscribirTasa k, CDbl(t)
         Application.Calculate
     End If
