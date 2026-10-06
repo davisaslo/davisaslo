@@ -10,15 +10,20 @@ Private Const HOJA_COT As String = "Cotizador"
 Private Const HOJA_CARTA As String = "Carta Cotizacion"
 Private Const HOJA_TABLA As String = "Tabla de Pagos"
 Private Const HOJA_HIST As String = "Historial"
+Private Const HOJA_PROP As String = "Propuesta"
+Private Const HOJA_PINI As String = "Pago Inicial"
+Private Const HOJA_VENTA As String = "Promesa de Venta"
+Private Const HOJA_COMITE As String = "Resumen Comite"
 Private Const COL_SNAPSHOT As Long = 22      ' columna V: inicio de la copia de datos capturados
 Private Const FILA_ENCABEZADO As Long = 4
 
 ' Celdas de captura que se guardan y se restauran
 Private Function NombresEntrada() As Variant
     NombresEntrada = Array("inp_Folio", "inp_Fecha", "inp_Cliente", "inp_RFC", "inp_Contacto", "inp_Correo", _
-        "inp_Proveedor", "inp_Equipo", "inp_Promotor", "inp_Obligado", "inp_Tipo", "inp_Moneda", "inp_TC", _
-        "inp_Modalidad", "inp_Valor", "inp_FechaFirma", "inp_FechaPrimera", "inp_ComBanco", "inp_Fondeo", _
-        "inp_CMobj", "esc_Incluir", "esc_Plazo", "esc_Sucesivo", "esc_Tasa", "esc_TasaSuc", "esc_Enganche", _
+        "inp_Proveedor", "inp_Equipo", "inp_Promotor", "inp_Producto", "inp_Obligado", "inp_Tipo", "inp_Moneda", _
+        "inp_TC", "inp_Modalidad", "inp_TipoActivo", "inp_Precio", "inp_PrecioIVA", "inp_FechaFirma", _
+        "inp_FechaPrimera", "inp_ComBanco", "inp_ModoTasa", "inp_TIIE", "inp_UsoAnticipo", "inp_GastosInv", _
+        "inp_Fondeo", "inp_ComProm", "inp_CMobj", "inp_EscTabla", "esc_Margen", "esc_Otros", "esc_OtrosForma", "esc_Incluir", "esc_Plazo", "esc_Sucesivo", "esc_Tasa", "esc_TasaSuc", "esc_Enganche", _
         "esc_Residual", "esc_PagoFinal", "esc_Comision", "esc_Deposito", "esc_Seguro", "esc_SeguroForma", _
         "esc_GPS", "esc_GPSForma")
 End Function
@@ -88,12 +93,21 @@ Public Sub LimpiarCaptura(Optional ByVal sinDialogo As Boolean = True)
     R("inp_Moneda").Value = Valor("def_Moneda")
     R("inp_TC").Value = 1
     R("inp_Modalidad").Value = Valor("def_Modalidad")
-    R("inp_Valor").Value = 0
+    R("inp_Precio").Value = 0
+    R("inp_PrecioIVA").Value = "No"
+    R("inp_Producto").Value = R("lst_Producto").Cells(1, 1).Value
+    R("inp_TipoActivo").Value = R("lst_TipoActivo").Cells(1, 1).Value
+    R("inp_ModoTasa").Value = "Tasa fija"
+    R("inp_TIIE").Value = Valor("par_TIIE")
+    R("inp_UsoAnticipo").Value = "Enganche"
+    R("inp_GastosInv").Value = Valor("par_GastosInv")
+    R("inp_ComProm").Value = Valor("par_ComProm")
+    R("inp_EscTabla").Value = 1
     R("inp_FechaFirma").Value = Date
     R("inp_FechaPrimera").Value = Date
     R("inp_ComBanco").Value = 0
     R("inp_Fondeo").Value = Valor("par_Fondeo")
-    R("inp_CMobj").Value = Valor("par_CMmin")
+    R("inp_CMobj").ClearContents
 
     R("esc_Incluir").Value = "Sí"
     R("esc_Plazo").Value = R("def_Plazo").Value
@@ -109,6 +123,9 @@ Public Sub LimpiarCaptura(Optional ByVal sinDialogo As Boolean = True)
     R("esc_SeguroForma").Value = "Financiado"
     R("esc_GPS").Value = 0
     R("esc_GPSForma").Value = "Financiado"
+    R("esc_Margen").Value = R("def_Margen").Value
+    R("esc_Otros").Value = 0
+    R("esc_OtrosForma").Value = "Financiado"
 End Sub
 
 ' ---------------------------------------------------------------------
@@ -272,15 +289,40 @@ Private Function ExportarHojaPDF(ByVal hoja As String, ByVal prefijo As String, 
     ExportarHojaPDF = ruta
 End Function
 
+' Exporta varias hojas a un solo PDF (en el orden indicado)
+Private Function ExportarHojasPDF(ByVal hojas As Variant, ByVal prefijo As String, ByVal abrir As Boolean) As String
+    Dim ruta As String, sep As String, actual As Worksheet
+    sep = Application.PathSeparator
+    ruta = CarpetaSalida() & sep & prefijo & "_" & LimpiarNombre(CStr(Valor("inp_Folio"))) & "_" & _
+           LimpiarNombre(CStr(Valor("inp_Cliente"))) & ".pdf"
+    Set actual = ActiveSheet
+    ThisWorkbook.Activate
+    ThisWorkbook.Worksheets(hojas).Select
+    ActiveSheet.ExportAsFixedFormat Type:=xlTypePDF, Filename:=ruta, Quality:=xlQualityStandard, _
+        IncludeDocProperties:=True, IgnorePrintAreas:=False, OpenAfterPublish:=abrir
+    actual.Select
+    ExportarHojasPDF = ruta
+End Function
+
+Private Function ElegirEscenarioDocumentos() As Boolean
+    Dim esc As Variant
+    esc = InputBox("¿Qué escenario desea en la propuesta / documentos? (1 a 4)", "Escenario", Valor("inp_EscTabla"))
+    If esc = "" Then Exit Function
+    If Not IsNumeric(esc) Then Exit Function
+    If CLng(esc) < 1 Or CLng(esc) > 4 Then Exit Function
+    R("inp_EscTabla").Value = CLng(esc)
+    Application.Calculate
+    ElegirEscenarioDocumentos = True
+End Function
+
 Private Function ValidarParaEnviar() As Boolean
     Dim k As Long, alguno As Boolean, msg As String
     For k = 1 To 4
         If R("esc_Incluir").Cells(1, k).Value = "Sí" Then
             alguno = True
             If R("res_Dictamen").Cells(1, k).Value <> "CUMPLE" Then
-                msg = msg & "  - Escenario " & k & ": cash margin " & _
-                      Format(R("res_CMpct").Cells(1, k).Value, "0.00%") & " (objetivo " & _
-                      Format(Valor("inp_CMobj"), "0.00%") & ")" & vbCrLf
+                msg = msg & "  - Escenario " & k & ": " & R("res_Dictamen").Cells(1, k).Value & _
+                      " (cash margin neto " & Format(R("res_CMnetoPct").Cells(1, k).Value, "0.00%") & ")" & vbCrLf
             End If
         End If
     Next k
@@ -293,7 +335,7 @@ Private Function ValidarParaEnviar() As Boolean
         Exit Function
     End If
     If msg <> "" Then
-        If MsgBox("Atención: los siguientes escenarios NO cumplen el cash margin objetivo:" & vbCrLf & msg & _
+        If MsgBox("Atención: los siguientes escenarios NO cumplen el rate card (cash margin / TIR mínima):" & vbCrLf & msg & _
                   vbCrLf & "¿Desea continuar de todos modos?", vbExclamation + vbYesNo, "Cash margin") <> vbYes Then
             Exit Function
         End If
@@ -314,15 +356,58 @@ Falla:
 End Sub
 
 Public Sub ExportarTablaPDF()
-    Dim ruta As String, esc As Variant
-    esc = InputBox("¿Qué escenario desea en la tabla de pagos? (1 a 4)", "Tabla de pagos", Valor("inp_EscTabla"))
-    If esc = "" Then Exit Sub
-    If Not IsNumeric(esc) Then Exit Sub
-    If CLng(esc) < 1 Or CLng(esc) > 4 Then Exit Sub
-    R("inp_EscTabla").Value = CLng(esc)
+    Dim ruta As String
+    If Not ElegirEscenarioDocumentos() Then Exit Sub
     On Error GoTo Falla
-    ruta = ExportarHojaPDF(HOJA_TABLA, "TablaPagos_Esc" & CLng(esc), True)
+    ruta = ExportarHojaPDF(HOJA_TABLA, "TablaPagos_Esc" & Valor("inp_EscTabla"), True)
     MsgBox "Tabla de pagos guardada en:" & vbCrLf & ruta, vbInformation
+    Exit Sub
+Falla:
+    MsgBox "No se pudo generar el PDF: " & Err.Description, vbExclamation
+End Sub
+
+Public Sub ExportarPropuestaPDF()
+    Dim ruta As String
+    If Not ElegirEscenarioDocumentos() Then Exit Sub
+    If Not ValidarParaEnviar() Then Exit Sub
+    On Error GoTo Falla
+    ruta = ExportarHojaPDF(HOJA_PROP, "Propuesta", True)
+    MsgBox "Propuesta guardada en:" & vbCrLf & ruta, vbInformation
+    Exit Sub
+Falla:
+    MsgBox "No se pudo generar el PDF: " & Err.Description, vbExclamation
+End Sub
+
+' Propuesta + carta comparativa + instrucciones de pago + tabla de pagos en un solo PDF
+Public Sub ExportarPaqueteCliente()
+    Dim ruta As String
+    If Not ElegirEscenarioDocumentos() Then Exit Sub
+    If Not ValidarParaEnviar() Then Exit Sub
+    On Error GoTo Falla
+    ruta = ExportarHojasPDF(Array(HOJA_PROP, HOJA_CARTA, HOJA_PINI, HOJA_TABLA), "Cotizacion", True)
+    MsgBox "Paquete para el cliente guardado en:" & vbCrLf & ruta, vbInformation
+    Exit Sub
+Falla:
+    MsgBox "No se pudo generar el PDF: " & Err.Description, vbExclamation
+End Sub
+
+Public Sub ExportarPromesaVentaPDF()
+    Dim ruta As String
+    If Not ElegirEscenarioDocumentos() Then Exit Sub
+    On Error GoTo Falla
+    ruta = ExportarHojaPDF(HOJA_VENTA, "PromesaVenta", True)
+    MsgBox "Promesa de venta guardada en:" & vbCrLf & ruta, vbInformation
+    Exit Sub
+Falla:
+    MsgBox "No se pudo generar el PDF: " & Err.Description, vbExclamation
+End Sub
+
+Public Sub ExportarResumenComitePDF()
+    Dim ruta As String
+    If Not ElegirEscenarioDocumentos() Then Exit Sub
+    On Error GoTo Falla
+    ruta = ExportarHojaPDF(HOJA_COMITE, "Comite", True)
+    MsgBox "Resumen para comité guardado en:" & vbCrLf & ruta, vbInformation
     Exit Sub
 Falla:
     MsgBox "No se pudo generar el PDF: " & Err.Description, vbExclamation
@@ -330,9 +415,10 @@ End Sub
 
 Public Sub EnviarPorCorreo()
     Dim ruta As String, ol As Object, m As Object, cuerpo As String
+    If Not ElegirEscenarioDocumentos() Then Exit Sub
     If Not ValidarParaEnviar() Then Exit Sub
     On Error GoTo FallaPDF
-    ruta = ExportarHojaPDF(HOJA_CARTA, "Cotizacion", False)
+    ruta = ExportarHojasPDF(Array(HOJA_PROP, HOJA_CARTA, HOJA_PINI, HOJA_TABLA), "Cotizacion", False)
     On Error GoTo FallaCorreo
     Set ol = CreateObject("Outlook.Application")
     Set m = ol.CreateItem(0)
@@ -392,6 +478,15 @@ Public Sub AplicarTasaMinima()
            vbCrLf & vbCrLf & resumen, vbInformation, "Tasa mínima"
 End Sub
 
+' Escribe la tasa anual del escenario k respetando el modo de tasa (fija o TIIE + margen)
+Private Sub EscribirTasa(ByVal k As Long, ByVal tasa As Double)
+    If CStr(Valor("inp_ModoTasa")) = "TIIE + margen" Then
+        R("esc_Margen").Cells(1, k).Value = tasa - CDbl(Valor("inp_TIIE"))
+    Else
+        R("esc_Tasa").Cells(1, k).Value = tasa
+    End If
+End Sub
+
 ' Escribe en el escenario k la tasa mínima (redondeada hacia arriba a 0.01%) y la devuelve
 Public Function AplicarTasaMinimaEscenario(ByVal k As Long) As Variant
     Dim t As Variant
@@ -399,7 +494,7 @@ Public Function AplicarTasaMinimaEscenario(ByVal k As Long) As Variant
     t = R("res_TasaMin").Cells(1, k).Value
     If IsNumeric(t) Then
         t = Application.WorksheetFunction.RoundUp(CDbl(t), 4)
-        R("esc_Tasa").Cells(1, k).Value = t
+        EscribirTasa k, CDbl(t)
         Application.Calculate
     End If
     AplicarTasaMinimaEscenario = t
@@ -428,7 +523,7 @@ Public Sub TasaParaRentaDeseada()
     If MsgBox("La tasa anual que produce una renta de " & Format(renta, "$#,##0.00") & " es " & _
               Format(tasa, "0.0000%") & "." & vbCrLf & vbCrLf & "¿Aplicarla al escenario " & esc & "?", _
               vbQuestion + vbYesNo, "Tasa para renta deseada") = vbYes Then
-        R("esc_Tasa").Cells(1, esc).Value = tasa
+        EscribirTasa esc, tasa
     End If
     Exit Sub
 Falla:
@@ -439,8 +534,9 @@ Public Sub CopiarEscenario1()
     Dim nm As Variant, k As Long
     If MsgBox("¿Copiar sucesivo, tasas, enganche, residual, pago final, comisión, depósito, seguro y GPS del " & _
               "escenario 1 a los escenarios 2, 3 y 4? (los plazos no cambian)", vbQuestion + vbYesNo) <> vbYes Then Exit Sub
-    For Each nm In Array("esc_Sucesivo", "esc_Tasa", "esc_TasaSuc", "esc_Enganche", "esc_Residual", "esc_PagoFinal", _
-                         "esc_Comision", "esc_Deposito", "esc_Seguro", "esc_SeguroForma", "esc_GPS", "esc_GPSForma")
+    For Each nm In Array("esc_Sucesivo", "esc_Tasa", "esc_Margen", "esc_TasaSuc", "esc_Enganche", "esc_Residual", _
+                         "esc_PagoFinal", "esc_Comision", "esc_Deposito", "esc_Seguro", "esc_SeguroForma", "esc_GPS", _
+                         "esc_GPSForma", "esc_Otros", "esc_OtrosForma")
         For k = 2 To 4
             R(CStr(nm)).Cells(1, k).Value = R(CStr(nm)).Cells(1, 1).Value
         Next k
@@ -451,7 +547,7 @@ End Sub
 '  PROTECCIÓN (sin contraseña: sólo evita borrados accidentales)
 ' ---------------------------------------------------------------------
 Private Function HojasProtegibles() As Variant
-    HojasProtegibles = Array(HOJA_COT, HOJA_CARTA, HOJA_TABLA, "Sensibilidad", _
+    HojasProtegibles = Array(HOJA_COT, HOJA_CARTA, HOJA_TABLA, "Sensibilidad", HOJA_PROP, HOJA_PINI, HOJA_VENTA, HOJA_COMITE, _
                              "Corrida 1", "Corrida 2", "Corrida 3", "Corrida 4")
 End Function
 
@@ -498,4 +594,16 @@ Public Sub IrConfiguracion()
 End Sub
 Public Sub IrInicio()
     ThisWorkbook.Worksheets("Inicio").Activate
+End Sub
+Public Sub IrPropuesta()
+    ThisWorkbook.Worksheets(HOJA_PROP).Activate
+End Sub
+Public Sub IrPagoInicial()
+    ThisWorkbook.Worksheets(HOJA_PINI).Activate
+End Sub
+Public Sub IrPromesa()
+    ThisWorkbook.Worksheets(HOJA_VENTA).Activate
+End Sub
+Public Sub IrComite()
+    ThisWorkbook.Worksheets(HOJA_COMITE).Activate
 End Sub

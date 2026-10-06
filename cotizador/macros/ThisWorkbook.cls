@@ -4,7 +4,7 @@ Private Sub Workbook_Open()
     On Error Resume Next
     Application.OnKey "^+n", "'" & ThisWorkbook.Name & "'!NuevaCotizacion"
     Application.OnKey "^+g", "'" & ThisWorkbook.Name & "'!GuardarCotizacion"
-    Application.OnKey "^+p", "'" & ThisWorkbook.Name & "'!ExportarCartaPDF"
+    Application.OnKey "^+p", "'" & ThisWorkbook.Name & "'!ExportarPaqueteCliente"
     ThisWorkbook.Worksheets("Cotizador").Activate
 End Sub
 
