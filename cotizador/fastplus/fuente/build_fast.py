@@ -11,6 +11,9 @@ from openpyxl.utils import get_column_letter as L
 import openpyxl.worksheet.page as page
 
 OUT = 'Cotizador_FASTPLUS.xlsx'
+import os as _os
+CLAVE_ADMIN = _os.environ.get('CLAVE_ADMIN', 'FP-Admin2026')        # protege libro y hojas; abre Catálogos
+CLAVE_GERENCIA = _os.environ.get('CLAVE_GERENCIA', 'FP-Gerencia2026')  # abre Factores, Bonos y Riesgo
 import os
 # Promotores: si existe la variable PROMOTORES (ruta al Excel "Relación de colaboradores"), se cargan
 # los datos reales; si no, se usan datos de ejemplo (versión pública sin datos personales).
@@ -422,6 +425,7 @@ caja(ws, 'I3', 'FP-0001', 'inp_Folio')
 etiqueta(ws, 'L3', 'Tipo:')
 caja(ws, 'M3:N3', '=sel_PromPuesto', salida=True)
 ws.row_dimensions[2].height = 20
+ws.row_dimensions[4].height = 30
 
 barra(ws, 5, 2, 14, 'Introducir datos generales')
 etiqueta(ws, 'B7', 'Cliente:')
@@ -1041,6 +1045,7 @@ for k in range(4):
     c.alignment = center
 ws.cell(row=AP0 + 1, column=2).fill = fill_sub
 grid = [
+    ('Renta mensual sin IVA', 'R', MON, 'res_Renta'),
     ('Renta mensual IVA incluido', 'RIVA', MON, 'res_RentaIVA'),
     ('Tasa de cálculo renta', 'Tasa', PCT, 'res_Tasa'),
     ('TIR real', 'TIR', PCT, 'res_TIR'),
@@ -1474,6 +1479,7 @@ for x in (rr, rr + 1):
     for col in range(2, 6):
         ws.cell(row=x, column=col).border = box
         ws.cell(row=x, column=col).fill = fill_sub
+name('bon_Distribucion', absref(ws.title, 'A15:F%d' % (rr + 1)))
 ws.cell(row=rr + 3, column=2, value='Observaciones bonos:').font = f_bold
 for col in range(3, 6):
     ws.cell(row=rr + 3, column=col).border = box
@@ -1593,8 +1599,13 @@ ws_his.page_setup.orientation = 'landscape'
 ws_his.page_setup.fitToWidth = 1
 ws_his.page_setup.fitToHeight = 0
 ws_his.sheet_properties.pageSetUpPr.fitToPage = True
+from openpyxl.workbook.protection import WorkbookProtection
+for w in [ws_fac, ws_bon, ws_rie, ws_cfg]:
+    w.sheet_state = 'hidden'
+wb.security = WorkbookProtection(workbookPassword=CLAVE_ADMIN, lockStructure=True)
 for w in [ws_cot, ws_fac, ws_pro, ws_pin, ws_ven, ws_bon, ws_rie, ws_tab] + ws_cr:
     w.protection.sheet = True
+    w.protection.password = CLAVE_ADMIN
     w.protection.formatColumns = False
     w.protection.formatRows = False
     w.protection.selectLockedCells = False

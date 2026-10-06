@@ -23,6 +23,36 @@ verificado.
 | Catalogos | Empresa, IVA, TIIE, fondeo, banco, oficinas por región y catálogo de promotores. |
 | Corrida 1–4 (ocultas) | Corrida completa de cada plazo. Se ven con el botón *Ir a → Corrida*. |
 
+## Botones y seguridad (versión 2, al estilo ABC)
+
+**Botones dentro de cada hoja.** No se imprimen y se distinguen por color:
+* Morado: cálculo.
+* Dorado: documentos para el cliente.
+* Gris: navegación y acceso.
+
+| Hoja | Botones |
+|---|---|
+| Cotizador | Nueva cotización · Guardar · Cargar folio · Propuesta completa PDF · Generar e-Propuesta · Enviar por correo · Ajustar renta deducible · Acceso gerencia |
+| Propuesta / Pago Inicial / Venta | Generar e-documento (libro nuevo solo con valores, como el "Generar propuesta" de ABC) · PDF · Regresar |
+| Factores | Ocultar hoja · Ajustar renta deducible · Margen mínimo (rate card) · Expediente interno PDF · Regresar |
+| Bonos | Mostrar bonos · Ocultar bonos · Ocultar hoja |
+| Riesgo, Tabla, Historial, Catálogos | PDF, cargar folio, proteger, regresar |
+
+* **e-Documentos:** la hoja se copia a un libro nuevo, solo con valores, sin fórmulas, botones ni
+  nombres internos. Se guarda como `e-Propuesta_<folio>_<cliente>.xlsx`.
+* **Ajustar renta deducible:** calcula la renta extraordinaria exacta para que la renta mensual
+  sea 100% deducible: $6,000 para autos ($200 diarios) u $8,550 para eléctricos/híbridos
+  ($285 diarios). Equivale al "Ajustar renta $6,000" de ABC, pero sin Buscar objetivo.
+* **Hojas restringidas:** Factores, Bonos y Riesgo se abren con la **clave de gerencia**.
+  Catálogos y Corridas se abren con la **clave de administrador**. Al abrir el libro se vuelven a
+  ocultar.
+* **Protección:** la estructura del libro y las hojas de cálculo están protegidas con la clave de
+  administrador. Solo las celdas de captura se pueden editar.
+* **Contraseñas:** las de esta versión pública son de ejemplo (`FP-Admin2026` / `FP-Gerencia2026`).
+  La versión entregada al cliente usa contraseñas distintas. Para cambiarlas, edite las constantes
+  `CLAVE_ADMIN` y `CLAVE_GERENCIA` del módulo `modCotizador` (Alt+F11) y vuelva a proteger con el
+  botón *Proteger libro y hojas*.
+
 ## Uso
 
 1. Abra el archivo y pulse **Habilitar contenido**. Aparece la pestaña **FASTPLUS** en la cinta.

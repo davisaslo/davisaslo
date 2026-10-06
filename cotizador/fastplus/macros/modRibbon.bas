@@ -101,3 +101,31 @@ End Sub
 Public Sub rbIrCorrida(control As IRibbonControl)
     IrCorrida
 End Sub
+
+Public Sub rbEPropuesta(control As IRibbonControl)
+    GenerarEPropuesta
+End Sub
+
+Public Sub rbEPago(control As IRibbonControl)
+    GenerarEPagoInicial
+End Sub
+
+Public Sub rbEVenta(control As IRibbonControl)
+    GenerarEVenta
+End Sub
+
+Public Sub rbRentaDed(control As IRibbonControl)
+    AjustarRentaDeducible
+End Sub
+
+Public Sub rbGerencia(control As IRibbonControl)
+    AccesoGerencia
+End Sub
+
+Public Sub rbOcultarGer(control As IRibbonControl)
+    OcultarGerencia
+End Sub
+
+Public Sub rbAdmin(control As IRibbonControl)
+    AccesoAdministrador
+End Sub
