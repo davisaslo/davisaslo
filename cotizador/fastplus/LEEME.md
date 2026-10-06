@@ -23,6 +23,18 @@ verificado.
 | Catalogos | Empresa, IVA, TIIE, fondeo, banco, oficinas por región y catálogo de promotores. |
 | Corrida 1–4 (ocultas) | Corrida completa de cada plazo. Se ven con el botón *Ir a → Corrida*. |
 
+## Versión abierta (para ajustes manuales)
+
+Para trabajar a mano existe una versión **abierta**:
+* Las 14 hojas están visibles: Factores, Bonos, Riesgo, Catálogos y las 4 Corridas.
+* Las columnas auxiliares de Factores también están visibles.
+* No hay contraseña en el libro ni en las hojas.
+* Las macros y los botones funcionan igual, pero ya no ocultan ni protegen nada. Solo el botón
+  *Proteger libro y hojas* vuelve a proteger, si se usa.
+
+Para generarla, ejecute el script con `ABIERTO=1` (por ejemplo
+`ABIERTO=1 python3 mk_vba_fast2.py && ABIERTO=1 python3 build_fast.py && python3 assemble_fast.py`).
+
 ## Política de tasas y fondeo (versión 4)
 
 * **Fondeo SOFOPLUS / FASTPLUS: 21.0%** (tasa fija). Es la fuente por defecto en el catálogo.

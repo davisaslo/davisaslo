@@ -321,6 +321,10 @@ rep('resumen = resumen & R("esc_Plazo").Cells(k).Value & " meses: no se pudo cal
     'resumen = resumen & R("esc_Plazo").Cells(k).Value & " meses: NO APLICADO (" & t & "; para cumplir se requiere más de la tasa máxima de política)" & vbCrLf')
 rep('MsgBox "Margen sobre TIIE aplicado en la hoja Factores (cumple el rate card):" & _',
     'MsgBox "Margen sobre TIIE aplicado en Factores (cumple el rate card; tasa entre " & Format(Valor("par_TasaMin"), "0%") & " y " & Format(Valor("par_TasaMax"), "0%") & "):" & _')
+if os.environ.get('ABIERTO') == '1':
+    # versión abierta: las macros no vuelven a proteger el libro
+    s = s.replace('ThisWorkbook.Protect CLAVE_ADMIN, True', "' (versión abierta: sin proteger) ThisWorkbook.Protect CLAVE_ADMIN, True")
+    s = s.replace("    MsgBox \"Libro y hojas protegidos.\", vbInformation", "    ThisWorkbook.Protect CLAVE_ADMIN, True\n    MsgBox \"Libro y hojas protegidos.\", vbInformation")
 open('vba_fast/modCotizador.bas', 'w', encoding='utf-8').write(s)
 
 # ThisWorkbook: ocultar restringidas al abrir
@@ -330,6 +334,8 @@ End Sub''', '''    OcultarRestringidas
     ThisWorkbook.Worksheets("Cotizador").Activate
 End Sub''', 1)
 assert 'OcultarRestringidas' in t
+if os.environ.get('ABIERTO') == '1':
+    t = t.replace('    OcultarRestringidas\n', '')
 open('vba_fast/ThisWorkbook.cls', 'w', encoding='utf-8').write(t)
 
 # cinta: nuevas acciones

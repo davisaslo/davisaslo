@@ -14,6 +14,7 @@ OUT = 'Cotizador_FASTPLUS.xlsx'
 import os as _os
 CLAVE_ADMIN = _os.environ.get('CLAVE_ADMIN', 'FP-Admin2026')        # protege libro y hojas; abre Catálogos
 CLAVE_GERENCIA = _os.environ.get('CLAVE_GERENCIA', 'FP-Gerencia2026')  # abre Factores, Bonos y Riesgo
+ABIERTO = _os.environ.get('ABIERTO') == '1'   # versión abierta: todo visible y sin protección
 import os
 # Promotores: si existe la variable PROMOTORES (ruta al Excel "Relación de colaboradores"), se cargan
 # los datos reales; si no, se usan datos de ejemplo (versión pública sin datos personales).
@@ -656,7 +657,7 @@ for col, nm, f in helpers:
         ws['%s%d' % (col, rr)] = f.format(r=rr) if isinstance(f, str) else f
         ws['%s%d' % (col, rr)].font = f_note
     name(nm, absref(ws.title, '%s%d:%s%d' % (col, R1, col, R4)))
-    ws.column_dimensions[col].hidden = True
+    ws.column_dimensions[col].hidden = not ABIERTO
 
 # ---- rate card
 RC0 = 58
@@ -1661,11 +1662,16 @@ ws_his.page_setup.fitToHeight = 0
 ws_his.sheet_properties.pageSetUpPr.fitToPage = True
 from openpyxl.workbook.protection import WorkbookProtection
 for w in [ws_fac, ws_bon, ws_rie, ws_cfg]:
-    w.sheet_state = 'hidden'
-wb.security = WorkbookProtection(workbookPassword=CLAVE_ADMIN, lockStructure=True)
+    w.sheet_state = 'visible' if ABIERTO else 'hidden'
+if ABIERTO:
+    for w in ws_cr:
+        w.sheet_state = 'visible'
+else:
+    wb.security = WorkbookProtection(workbookPassword=CLAVE_ADMIN, lockStructure=True)
 for w in [ws_cot, ws_fac, ws_pro, ws_pin, ws_ven, ws_bon, ws_rie, ws_tab] + ws_cr:
-    w.protection.sheet = True
-    w.protection.password = CLAVE_ADMIN
+    w.protection.sheet = not ABIERTO
+    if not ABIERTO:
+        w.protection.password = CLAVE_ADMIN
     w.protection.formatColumns = False
     w.protection.formatRows = False
     w.protection.selectLockedCells = False
